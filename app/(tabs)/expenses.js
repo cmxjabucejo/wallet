@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useWallets } from '../../lib/store';
-import { allotted, expenseRows, fmtDay, money, spent } from '../../lib/budget';
-import { Bar, Card, Row, Segmented, confirmDelete, useAppTheme } from '../../lib/ui';
+import { allotted, expenseRows, money, relDay, spent, walletExpenses } from '../../lib/budget';
+import { Bar, Card, Forecast, Row, Segmented, confirmDelete, useAppTheme } from '../../lib/ui';
 
 // All expenses across wallets. Adding and editing happen in the /expense modal.
 export default function Expenses() {
@@ -23,7 +23,7 @@ export default function Expenses() {
       data={rows}
       keyExtractor={(r) => r.e.id}
       ListHeaderComponent={
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: 8 }}>
           {wallets.length > 0 && (
             <Segmented options={[['all', 'All'], ...wallets.map((x) => [x.id, x.name])]} value={filter} onChange={setFilter} />
           )}
@@ -40,20 +40,21 @@ export default function Expenses() {
               </>
             )}
           </Card>
-          {rows.length > 0 && <Text style={s.muted}>Tap to edit · long-press to delete</Text>}
+          {shown && <Forecast w={shown} expenses={walletExpenses(shown)} total={shown.amount} />}
+          {rows.length > 0 && <Text style={s.h2}>Tap to edit · long-press to delete</Text>}
         </View>
       }
       ListEmptyComponent={<Text style={s.empty}>{loading ? 'Loading…' : 'No expenses yet. Tap + to add one.'}</Text>}
       renderItem={({ item: r }) => (
         <Pressable onPress={() => router.push(`/expense?edit=${r.e.id}`)}
           onLongPress={() => confirmDelete(`expense "${r.e.note}"`, () => removeExpense(r.w.id, r.b.id, r.e.id))}>
-          <Card style={s.row}>
+          <View style={[s.item, s.row]}>
             <View style={{ flex: 1 }}>
-              <Text style={s.bold}>{r.e.note}</Text>
-              <Text style={s.muted}>{fmtDay(r.day)} · {r.w.name} › {r.b.name}</Text>
+              <Text style={s.bold} numberOfLines={1}>{r.e.note}</Text>
+              <Text style={s.tiny} numberOfLines={1}>{relDay(r.day)} · {r.w.name} › {r.b.name}</Text>
             </View>
             <Text style={s.bold}>-{money(r.e.amount)}</Text>
-          </Card>
+          </View>
         </Pressable>
       )}
     />
