@@ -9,7 +9,9 @@ import { Bar, Card, CategoryPie, Forecast, Row, Segmented, confirmDelete, useApp
 export default function Expenses() {
   const { wallets, loading, removeExpense } = useWallets();
   const { s, colors } = useAppTheme();
-  const [filter, setFilter] = useState('all');
+  const [picked, setFilter] = useState('all');
+  // A deleted wallet's filter falls back to All.
+  const filter = wallets.some((x) => x.id === picked) ? picked : 'all';
 
   const all = expenseRows(wallets);
   const rows = filter === 'all' ? all : all.filter((r) => r.w.id === filter);
