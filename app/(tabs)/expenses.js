@@ -3,7 +3,7 @@ import { FlatList, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useWallets } from '../../lib/store';
 import { allotted, expenseRows, money, relDay, spent, walletExpenses } from '../../lib/budget';
-import { Bar, Card, Forecast, Row, Segmented, confirmDelete, useAppTheme } from '../../lib/ui';
+import { Bar, Card, CategoryPie, Forecast, Row, Segmented, confirmDelete, useAppTheme } from '../../lib/ui';
 
 // All expenses across wallets. Adding and editing happen in the /expense modal.
 export default function Expenses() {
@@ -40,6 +40,7 @@ export default function Expenses() {
               </>
             )}
           </Card>
+          <CategoryPie wallets={shown ? [shown] : wallets} title={shown ? `Where it went · ${shown.name}` : 'Where it went · All wallets'} />
           {shown && <Forecast w={shown} expenses={walletExpenses(shown)} total={shown.amount} />}
           {rows.length > 0 && <Text style={s.h2}>Tap to edit · long-press to delete</Text>}
         </View>
