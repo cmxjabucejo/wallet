@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { Image, ScrollView, Switch, Text, View } from 'react-native';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useWallets } from '../lib/store';
-import { allotted, defaultDay, expenseRows, isDay, money, parseAmount, spent, summary, walletFor } from '../lib/budget';
-import { Button, Card, DateField, ErrorText, Input, Row, Segmented, useAppTheme } from '../lib/ui';
+import { allotted, budgetAlert, defaultDay, expenseRows, isDay, money, parseAmount, spent, summary, walletFor } from '../lib/budget';
+import { notify, photosSupported, pickPhoto } from '../lib/device';
+import { Button, Card, DateField, ErrorText, HeaderButton, Input, Row, Segmented, useAppTheme } from '../lib/ui';
 
 // Modal to add or edit an expense. ?edit=<expenseId> edits; ?budget=<budgetId> preselects a category.
 // The date picks the wallet and the wallet's budgets are the categories, so a new date can move an expense.
@@ -25,6 +26,8 @@ function ExpenseForm({ editing, presetWallet, presetBudget }) {
   const [amount, setAmount] = useState(editing ? String(editing.e.amount) : '');
   const [note, setNote] = useState(editing?.e.note ?? '');
   const [bid, setBid] = useState(editing?.b.id ?? presetBudget ?? null);
+  const [recurring, setRecurring] = useState(editing?.e.recurring ?? false);
+  const [photo, setPhoto] = useState(editing?.e.photo ?? null);
   const [error, setError] = useState(null);
 
   const w = isDay(date) ? walletFor(wallets, date) : null;
@@ -38,10 +41,22 @@ function ExpenseForm({ editing, presetWallet, presetBudget }) {
     if (!w) return setError('No wallet covers this date. Give a wallet a date range first.');
     if (!b) return setError('Pick a category.');
     if (!(n > 0)) return setError('Enter an amount greater than 0.');
-    const fields = { note: note.trim() || b.name, amount: n, date };
+    const fields = { note: note.trim() || b.name, amount: n, date, recurring, photo };
     if (editing) updateExpense(editing.w.id, editing.b.id, editing.e.id, { wid: w.id, bid: b.id, ...fields });
-    else addExpense(w.id, b.id, fields.note, fields.amount, fields.date);
+    else addExpense(w.id, b.id, fields);
+    const limit = allotted(w, b);
+    const msg = budgetAlert(b.name, limit, limit - left, limit - left + n);
+    if (msg && !b.savings) notify('Budget alert', msg); // savings withdrawals aren't overspending
     router.back();
+  };
+
+  const attach = async (camera) => {
+    try {
+      const uri = await pickPhoto(camera);
+      if (uri) setPhoto(uri);
+    } catch {
+      setError("Couldn't attach the photo.");
+    }
   };
 
   return (
@@ -68,6 +83,25 @@ function ExpenseForm({ editing, presetWallet, presetBudget }) {
         )}
         <Input placeholder="Amount" keyboardType="decimal-pad" value={amount} onChangeText={setAmount} />
         <Input placeholder="What for? (optional)" value={note} onChangeText={setNote} />
+        <View style={s.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.title}>Repeats every period</Text>
+            <Text style={s.tiny}>Copied into the next wallet when you add a budget with the same name.</Text>
+          </View>
+          <Switch value={recurring} onValueChange={setRecurring} accessibilityLabel="Repeats every period" />
+        </View>
+        {photosSupported && (photo ? (
+          <View style={{ gap: 6 }}>
+            <Image source={{ uri: photo }} style={{ width: '100%', height: 220, borderRadius: 8 }} resizeMode="contain"
+              accessibilityLabel="Receipt photo" />
+            <HeaderButton title="Remove photo" onPress={() => setPhoto(null)} />
+          </View>
+        ) : (
+          <View style={[s.row, { justifyContent: 'flex-start' }]}>
+            <HeaderButton title="Take photo" onPress={() => attach(true)} />
+            <HeaderButton title="Choose photo" onPress={() => attach(false)} />
+          </View>
+        ))}
         <ErrorText>{error}</ErrorText>
         <Button title={editing ? 'Save changes' : 'Add expense'} onPress={save} />
       </Card>

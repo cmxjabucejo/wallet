@@ -35,6 +35,13 @@
             "backgroundColor": "#0b0f17"
           }
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Wallets uses your photos so you can attach receipts to expenses.",
+          "cameraPermission": "Wallets uses the camera so you can photograph receipts."
+        }
       ]
     ],
     "scheme": "wallets",

@@ -4,7 +4,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useWallets } from '../../../lib/store';
 import { allotted, dayOf, money, relDay, spent } from '../../../lib/budget';
 import { BudgetForm } from '../../../lib/forms';
-import { Bar, Button, Card, Forecast, HeaderButton, Stat, confirmDelete, useAppTheme } from '../../../lib/ui';
+import { Bar, Button, Card, ExpenseMarks, Forecast, HeaderButton, Stat, useAppTheme } from '../../../lib/ui';
 
 export default function Budget() {
   const { walletId, budgetId } = useLocalSearchParams();
@@ -51,17 +51,20 @@ export default function Budget() {
           </Card>
           <Forecast w={w} expenses={b.expenses} total={a} />
           <Button title="Add expense" onPress={() => router.push(`/expense?budget=${b.id}`)} />
-          <Text style={s.h2}>Expenses</Text>
+          <Text style={s.h2}>Expenses · long-press to delete</Text>
         </View>
       }
       ListEmptyComponent={<Text style={s.empty}>No expenses yet.</Text>}
       renderItem={({ item: e }) => (
         <Pressable onPress={() => router.push(`/expense?edit=${e.id}`)}
-          onLongPress={() => confirmDelete(`expense "${e.note}"`, () => removeExpense(w.id, b.id, e.id))}>
+          onLongPress={() => removeExpense(w.id, b.id, e)}>
           <View style={[s.item, s.row]}>
             <View style={{ flex: 1 }}>
               <Text style={s.bold} numberOfLines={1}>{e.note}</Text>
-              <Text style={s.tiny}>{relDay(dayOf(e.date))}</Text>
+              <View style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+                <Text style={s.tiny}>{relDay(dayOf(e.date))}</Text>
+                <ExpenseMarks e={e} />
+              </View>
             </View>
             <Text style={s.bold}>-{money(e.amount)}</Text>
           </View>
